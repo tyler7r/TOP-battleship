@@ -1,9 +1,8 @@
-
 function createGameBoard() {
 
 }
 
-export function Ship(name, length) {
+function Ship(length = 2, name = 'battleship') {
     return {
         name,
         length,
@@ -27,11 +26,14 @@ export function Ship(name, length) {
     }
 }
 
-export function Gameboard() {
+function Gameboard() {
     return {
-
-        placeShip() {
-            
+        placeShip([x, y]) {
+            let createdShip = new Ship();
+            createdShip.coordinates = [];
+            createdShip.coordinates.push({x, y});
+            createdShip.coordinates.push({x, y:y+1});
+            return createdShip.coordinates;
         },
 
         receiveAttack() {
@@ -40,11 +42,14 @@ export function Gameboard() {
     }
 }
 
-export function Player() {
+function Player() {
     return {
 
     }
 }
 
-export let ship = new Ship('battleship', 4);
+let ship = new Ship();
+let gameboard = new Gameboard();
+
+export { ship, gameboard };
 

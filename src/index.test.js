@@ -1,8 +1,8 @@
-import { ship } from "./index";
+import { ship, gameboard } from "./index";
 
 describe('Ship Factory Function Property Check', () => {
     test('Ship length recorded properly', () => {
-        expect(ship.length).toBe(4);
+        expect(ship.length).toBe(2);
     })
     test('Ship name recorded properly', () => {
         expect(ship.name).toBe('battleship');
@@ -23,7 +23,7 @@ describe('Ship Factory Function Method Check', () => {
         expect(ship.hit()).toBe(ship.hits);
     })
     test('isSunk method returns false when hits < length', () => {
-        expect(ship.isSunk(3)).toBe(false);
+        expect(ship.isSunk(1)).toBe(false);
     })
     test('isSunk method returns true when hits > length', () => {
         expect(ship.isSunk(4)).toBe(true);
@@ -32,9 +32,13 @@ describe('Ship Factory Function Method Check', () => {
         ship.hit();
         ship.hit();
         ship.hit();
-        ship.hit();
-        ship.hit();
-        expect(ship.hits).toBeLessThanOrEqual(4);
+        expect(ship.hits).toBe(2);
+    })
+})
+
+describe('Gameboard Method Check', () => {
+    test('placeShip returns new ships coordinates', () => {
+        expect(gameboard.placeShip([3, 4])).toStrictEqual([{x:3, y:4}, {x:3, y:5}]);
     })
 })
 
