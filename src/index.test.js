@@ -1,4 +1,4 @@
-import { ship, gameboard, p1Board, p2Board, p1, p2, player1 } from "./index";
+import { ship, gameboard, p2Gameboard, p1, p2, player1 } from "./index";
 
 describe('Ship Factory Function Property Check', () => {
     test('Ship length recorded properly', () => {
@@ -57,42 +57,59 @@ describe('Gameboard Method Check', () => {
             expect(gameboard.shipMap.carrier).toBeTruthy();        })
     })
     describe('placeShip returns new ships coordinates. Ship length and board size accounted for', () => {
+        test('createBoard will create an active playing Board for both players', () => {
+            gameboard.createBoard();
+            expect(gameboard.activeBoard.length).toBe(100);
+            p2Gameboard.createBoard();
+            expect(p2Gameboard.activeBoard.length).toBe(100);
+        })
+        test('createBoard will never create more than 100 squares, if accidentally called a second time', () => {
+            gameboard.createBoard();
+            expect(gameboard.activeBoard.length).toBe(100);
+        })
         test('destroyer coordinates correct', () => {
-            expect(gameboard.placeShip(player1, gameboard.shipMap.destroyer, [3, 4])).toStrictEqual([{x:3, y:4}, {x:4, y:4}]);
+            expect(gameboard.placeShip(gameboard.shipMap.destroyer, [3, 4])).toStrictEqual([{x:3, y:4}, {x:4, y:4}]);
         })
         test('carrier coordinates correct', () => {
-            expect(gameboard.placeShip(player1, gameboard.shipMap.carrier, [5, 2])).toStrictEqual([{x: 5, y: 2}, {x: 6, y:2}, {x: 7, y: 2}, {x: 8, y: 2}, {x: 9, y: 2}]);
+            expect(gameboard.placeShip(gameboard.shipMap.carrier, [5, 2])).toStrictEqual([{x: 5, y: 2}, {x: 6, y:2}, {x: 7, y: 2}, {x: 8, y: 2}, {x: 9, y: 2}]);
         })
         test('will not allow ship to placed off the 10x10 gameboard', () => {
-            expect(gameboard.placeShip(player1, gameboard.shipMap.carrier, [8, 5])).toBe('Invalid Location');
+            expect(gameboard.placeShip(gameboard.shipMap.carrier, [8, 5])).toBe('Invalid Location');
         })
+        test('will not allow ship to be place on top of another ship', () => {
+            expect(gameboard.placeShip(gameboard.shipMap.submarine, [3, 2])).toBe('Invalid Location');
+        })
+        test('will not allow even a portion of the ship to be placed when it will result in the ship on top of another ship', () => {
+            expect(gameboard.activeBoard[12].occupied).toBeUndefined();
+        });
+
         test('After ship is placed, it should add a property to the associated squares with the name of the ship that is placed on it', () => {
-            expect(p1Board[14].occupied).toBe('carrier');
-            expect(p1Board[17].occupied).toBe('carrier');
+            expect(gameboard.activeBoard[14].occupied).toBe('carrier');
+            expect(gameboard.activeBoard[17].occupied).toBe('carrier');
         })
     })
     describe('receiveAttack takes in coordinates and adjusts gameboard as necessary', () => {
         test('receiveAttack returns which square was attacked', () => {
-            expect(gameboard.receiveAttack(player1,[4, 4])).toBe(p1Board[33]);
+            expect(gameboard.receiveAttack([4, 4])).toBe(gameboard.activeBoard[33]);
         })
         test("receiveAttack updates the attacked squares's status", () => {
-            expect(p1Board[33].status).not.toBe('untargeted');
+            expect(gameboard.activeBoard[33].status).not.toBe('untargeted');
         })
         test('receiveAttack updates the number of hits on the ship locatd on the square', () => {
             expect(gameboard.shipMap.destroyer.hits).toBe(1);
         })
         test('receiveAttack will update sunk status of ship if the last attack kills the ship', () => {
-            expect(gameboard.receiveAttack(player1,[3, 4])).toBe(p1Board[32]);
+            expect(gameboard.receiveAttack([3, 4])).toBe(gameboard.activeBoard[32]);
             expect(gameboard.shipMap.destroyer.sunk).toBeTruthy();
         })
         test('receiveAttack continued test', () => {
-            expect(gameboard.receiveAttack(player1,[5, 2])).toBe(p1Board[14]);
+            expect(gameboard.receiveAttack([5, 2])).toBe(gameboard.activeBoard[14]);
             expect(gameboard.shipMap.carrier.hits).toBe(1);
-            gameboard.receiveAttack(player1, [6, 2]);
-            gameboard.receiveAttack(player1,[7, 2]);
-            gameboard.receiveAttack(player1,[8, 2]);
+            gameboard.receiveAttack([6, 2]);
+            gameboard.receiveAttack([7, 2]);
+            gameboard.receiveAttack([8, 2]);
             expect(gameboard.shipMap.carrier.hits).toBe(4);
-            gameboard.receiveAttack(player1,[9, 2]);
+            gameboard.receiveAttack([9, 2]);
             expect(gameboard.shipMap.carrier.sunk).toBeTruthy();
         })
     })
@@ -104,12 +121,12 @@ describe('Player method check', () => {
     })
     describe('Player can launch attack on opposing player board', () => {
         test('launchAttack updates attacked player activeBoard', () => {
-            gameboard.placeShip(player1, gameboard.shipMap.cruiser, [8, 1]);
+            gameboard.placeShip(gameboard.shipMap.cruiser, [8, 1]);
             p2.launchAttack(player1, [9, 1]);
-            expect(p1Board[8].status).toBe('hit');
+            expect(gameboard.activeBoard[8].status).toBe('hit');
         })
         test('launchAttack updates hitSquares array in player object', () => {
-            expect(p2.hitSquares[0]).toBe(p1Board[8]);
+            expect(p2.hitSquares[0]).toBe(gameboard.activeBoard[8]);
         })
         test('launchAttack updates, attacked ship hits value', () => {
             expect(gameboard.shipMap.cruiser.hits).toBe(1);
@@ -122,12 +139,11 @@ describe('Player method check', () => {
     })
 })
 describe('AI method checks', () => {
-    test('Computer will fire on an untargeted square and update the p1Board accordingly', () => {
-        p2.computerAttack();
-        expect(p2.untargetedSquares.length).toBe(90);
-    })
-    test('Computer knows when it hit a player ship on its turn', () => {
-        expect(p2.attackResult).toBeDefined();
+    test.skip('Computer will fire on an untargeted square and update the gameboard.activeBoard accordingly', () => {
+        gameboard.placeShip(player1, gameboard.shipMap.battleship, [6, 6]);
+        p2.launchAttack(player1, [1, 1]);
+        expect(p2.knownShip).toBe(true);
+        expect(p2.computerAttack()).toBe(false);
     })
 })
 

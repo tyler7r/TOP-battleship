@@ -1,21 +1,3 @@
-export let p1Board = [];
-export let p2Board = [];
-
-export function createBoard() { 
-    if (p1Board.length >= 100 || p2Board.length >= 100) return;
-    for (let i = 1; i <= 100; i++) {
-        let square = {};
-        square.name = i;
-        square.status = 'untargeted';
-        
-        p1Board.push(square);
-        p2Board.push(square);
-    }
-    return p1Board.length;
-};
-
-createBoard();
-
 function Ship(length = 2, name = 'battleship') {
     return {
         name,
@@ -28,6 +10,7 @@ function Ship(length = 2, name = 'battleship') {
             this.hits += 1;
             return this.hits;
         },
+
         isSunk(hits) {
             if (hits < this.length) {
                 return this.sunk;
@@ -43,7 +26,21 @@ function Ship(length = 2, name = 'battleship') {
 function Gameboard() {
 
     return {
+        activeBoard: [],
+
         shipMap: {},
+
+        createBoard() { 
+            if (this.activeBoard.length >= 100) return;
+            for (let i = 1; i <= 100; i++) {
+                let square = {};
+                square.name = i;
+                square.status = 'untargeted';
+                
+                this.activeBoard.push(square);
+            }
+            return this.activeBoard.length;
+        },
 
         createShips() {
             this.shipMap.destroyer = new Ship(2, 'destroyer');
@@ -54,49 +51,48 @@ function Gameboard() {
             return Object.keys(this.shipMap).length;
         },
 
-        placeShip(player, ship, [x, y]) {
+        placeShip(ship, [x, y]) {
             let size = ship.length;
             ship.coordinates = [];
-            if (size + x > 11) return 'Invalid Location'
-            for (let i = 0; i < size; i++) {
-                ship.coordinates.push({x: x+i, y});
-                let index = ((y * 10) + (x + i)) - 11;
-                if (player === player1) {
-                    let square = p1Board[index];
-                    square.occupied = ship.name;
-                } else if (player === player2) {
-                    let square = p2Board[index];
-                    square.occupied = ship.name;
+            if (size + x > 11) return 'Invalid Location';
+            let mapCheck = (array) => {
+                for (let i = 0; i < size; i++) {
+                    let index = ((y * 10) + (x + i)) - 11;
+                    if (array[index].occupied !== undefined) {
+                        return true
+                    }
                 }
             }
-            return ship.coordinates;
+            if (mapCheck(this.activeBoard) === true) {
+                return 'Invalid Location'
+            } else {
+                for (let i = 0; i < size; i++) {
+                    let index = ((y * 10) + (x + i)) - 11;
+                    ship.coordinates.push({x: x+i, y});
+                    let square = this.activeBoard[index];
+                    square.occupied = ship.name;
+                }
+                return ship.coordinates;
+            }
         },
 
-        receiveAttack(player, [x, y]) {
+        receiveAttack([x, y]) {
             let squareIndex = ((y * 10) + x) - 11;
-            if (player === player1) {
-                if (p1Board[squareIndex].occupied !== undefined) {
-                    p1Board[squareIndex].status = 'hit';
-                    let shipSelect = p1Board[squareIndex].occupied;
-                    let ship = this.shipMap[`${shipSelect}`];
-                    ship.hits += 1;
-                    ship.isSunk(ship.hits);
-                } else if (p1Board[squareIndex].occupied){
-                    p1Board[squareIndex].status = 'miss';
+            if (this.activeBoard[squareIndex].occupied !== undefined) {
+                this.activeBoard[squareIndex].status = 'hit';
+                let shipSelect = this.activeBoard[squareIndex].occupied;
+                let ship = this.shipMap[`${shipSelect}`];
+                ship.hits += 1;
+                ship.isSunk(ship.hits);
+                if (ship.sunk === true) {
+                    this.activeBoard[squareIndex].status = 'sunk'
+                } else if (ship.sunk === false) {
+                    this.activeBoard[squareIndex].status = 'hit';
                 }
-                return p1Board[squareIndex];
-            } else if (player === player2) {
-                if (p2Board[squareIndex].occupied !== undefined) {
-                    p2Board[squareIndex].status = 'hit';
-                    let shipSelect = p2Board[squareIndex].occupied;
-                    let ship = this.shipMap[`${shipSelect}`];
-                    ship.hits += 1;
-                    ship.isSunk(ship.hits);
-                } else {
-                    p2Board[squareIndex].status = 'miss'
-                }
-                return p2Board[squareIndex];
+            } else {
+                this.activeBoard[squareIndex].status = 'miss'
             }
+            return this.activeBoard[squareIndex];
         }
     }
 }
@@ -107,43 +103,96 @@ function Player(name) {
 
         untargetedSquares: [],
 
-        attackResult: 'miss',
+        knownShip: false,
 
         hitSquares: [],
 
         launchAttack(opponent, [x, y]) {
             if (opponent === player1) {
-                let attack = gameboard.receiveAttack(opponent, [x, y]);
+                let attack = gameboard.receiveAttack([x, y]);
                 if (attack.status === 'hit') {
                     this.hitSquares.push(attack);
-                    this.attackResult = 'hit'
-                } else {
-                    this.attackResult = 'miss'
+                    this.knownShip = true;
+                } else if (attack.status = 'sunk') {
+                    this.hitSquares.push(attack);
+                    this.knownShip = false;
+                } 
+                else {
+                    this.knownShip = false;
                 }
             } else if (opponent === player2) {
-                let attack = p2Gameboard.receiveAttack(opponent, [x, y]);
-                if (attack === 'hit') {
+                let attack = p2Gameboard.receiveAttack([x, y]);
+                if (attack.status === 'hit') {
                     this.hitSquares.push(attack);
-                    this.attackResult = 'hit';
-                } else {
-                    this.attackResult = 'miss';
+                    this.knownShip = true;
+                } else if (attack.status = 'sunk') {
+                    this.hitSquares.push(attack);
+                    this.knownShip = false;
+                } 
+                else {
+                    this.knownShip = false;
                 }
             }
         },
 
         computerAttack() {
-            this.untargetedSquares = [];
-            for (let i = 0; i < p1Board.length; i++) {
-                if (p1Board[i].status === 'untargeted') {
-                    this.untargetedSquares.push(p1Board[i]);
+            if (this.knownShip === true) {
+                return this.smartComputer();
+            } else if (this.knownShip === false) {
+                this.untargetedSquares = [];
+                for (let i = 0; i < this.activeBoard.length; i++) {
+                    if (this.activeBoard[i].status === 'untargeted') {
+                        this.untargetedSquares.push(this.activeBoard[i]);
+                    }
                 }
+                let randomChoice = Math.round(Math.random()*(this.untargetedSquares.length - 1));
+                let squareSelect = this.untargetedSquares[randomChoice].name.toString();
+                let yCoord; let xCoord;
+                if (parseInt(squareSelect) < 10) {
+                    yCoord = 1;
+                    xCoord = parseInt(squareSelect);
+                } else {
+                    yCoord = parseInt(squareSelect.slice(0, 1)) + 1;
+                    xCoord = parseInt(squareSelect.slice(1));
+                }
+                this.launchAttack(player1, [xCoord, yCoord]);
             }
-            let randomChoice = Math.round(Math.random()*(this.untargetedSquares.length - 1));
-            let squareSelect = this.untargetedSquares[randomChoice].name.toString();
-            let yCoord = parseInt(squareSelect.slice(0, 1)) + 1;
-            let xCoord = parseInt(squareSelect.slice(1));
+        },
 
-            this.launchAttack(player1, [xCoord, yCoord]);
+        smartComputer() {
+            let squareAbove = {}; let squareBelow = {}; let squareLeft = {}; let squareRight = {};
+            let recentHit = this.hitSquares[this.hitSquares.length - 1].name.toString();
+            let yCoord;
+            let xCoord;
+            if (parseInt(recentHit) < 10) {
+                yCoord = 1;
+                xCoord = parseInt(recentHit);
+            } else {
+                yCoord = parseInt(recentHit.slice(0, 1)) + 1;
+                xCoord = parseInt(recentHit.slice(1)) - 1;
+            }
+            if(yCoord + 1 <= 10) {
+                squareAbove.x = xCoord;
+                squareAbove.y = yCoord + 1;
+                squareAbove.goodMove = true;
+            }
+            if (yCoord - 1 >= 1) {
+                squareBelow.x = xCoord;
+                squareBelow.y = yCoord - 1;
+                squareBelow.goodMove = true;
+            }
+            if (xCoord + 1 <= 10) {
+                squareRight.x = xCoord + 1;
+                squareRight.y = yCoord;
+                squareRight.goodMove = true;
+            }
+            if (xCoord - 1 >= 1) {
+                squareLeft.x = xCoord - 1;
+                squareLeft.y = yCoord;
+                squareLeft.goodMove = true;
+            }
+            
+            return [squareAbove, squareBelow, squareLeft, squareRight];
         }
     }
 }
@@ -157,5 +206,5 @@ let p2 = new Player('Computer');
 export const player1 = p1.name;
 export const player2 = p2.name;
 
-export { ship, gameboard, p1, p2 };
+export { ship, gameboard, p2Gameboard, p1, p2 };
 
