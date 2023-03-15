@@ -1,13 +1,16 @@
-export let activeBoard = [];
+export let p1Board = [];
+export let p2Board = [];
+
 export function createBoard() { 
-    if (activeBoard.length >= 100) return;
+    if (p1Board.length >= 100 || p2Board.length >= 100) return;
     for (let i = 1; i <= 100; i++) {
         let square = {};
         square.name = i;
         square.status = 'untargeted';
-        activeBoard.push(square);
+        p1Board.push(square);
+        p2Board.push(square);
     }
-    return activeBoard.length;
+    return p1Board.length;
 };
 
 createBoard();
@@ -50,27 +53,41 @@ function Gameboard() {
             return Object.keys(this.shipMap).length;
         },
 
-        placeShip(ship, [x, y]) {
+        placeShip(player, ship, [x, y]) {
             let size = ship.length;
             ship.coordinates = [];
             if (size + x > 10) return 'Invalid Location'
             for (let i = 0; i < size; i++) {
                 ship.coordinates.push({x: x+i, y});
                 let index = ((y * 10) + (x + i)) - 11;
-                let square = activeBoard[index];
-                square.occupied = ship.name;
+                if (player === 'p1') {
+                    let square = p1Board[index];
+                    square.occupied = ship.name;
+                } else if (player === 'p2') {
+                    let square = p2Board[index];
+                    square.occupied = ship.name;
+                }
             }
             return ship.coordinates;
         },
 
-        receiveAttack([x, y]) {
+        receiveAttack(player, [x, y]) {
             let squareIndex = ((y * 10) + x) - 11;
-            activeBoard[squareIndex].status = 'attacked';
-            let shipSelect = activeBoard[squareIndex].occupied;
-            let ship = this.shipMap[`${shipSelect}`];
-            ship.hits += 1;
-            ship.isSunk(ship.hits);
-            return activeBoard[squareIndex];
+            if (player === 'p1') {
+                p1Board[squareIndex].status = 'attacked';
+                let shipSelect = p1Board[squareIndex].occupied;
+                let ship = this.shipMap[`${shipSelect}`];
+                ship.hits += 1;
+                ship.isSunk(ship.hits);
+                return p1Board[squareIndex];
+            } else if (player === 'p2') {
+                p2Board[squareIndex].status = 'attacked';
+                let shipSelect = p2Board[squareIndex].occupied;
+                let ship = this.shipMap[`${shipSelect}`];
+                ship.hits += 1;
+                ship.isSunk(ship.hits);
+                return p2Board[squareIndex];
+            }
         }
     }
 }
