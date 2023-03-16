@@ -2,7 +2,7 @@ import { gameboard, p2Gameboard, p1, p2, player1, player2, game } from ".";
 
 export let xCoord;
 export let yCoord;
-let counter = 0;
+export let counter = 0;
 
 const p1Gameboard = document.querySelector('.p1Gameboard')
 export function createP1Board() {
@@ -71,6 +71,7 @@ export function initializeSquares(player) {
     let squares = document.querySelectorAll(`.${player}Square`);
     squares.forEach((square) => {
         square.addEventListener('click', (e) => {
+            if (game.checkWinner() === 'Player 1 Wins' || game.checkWinner() === 'Player 2 Wins') return;
             let target = (e.target.id.slice(2));
             if (parseInt(target) < 10) {
                 xCoord = parseInt(target);
@@ -87,8 +88,6 @@ export function initializeSquares(player) {
             }
             if (game.startGame === true) {
                 if (e.target.className.includes('p2')) return;
-                console.log(counter);
-                console.log(xCoord, yCoord);
                 let placement = game.placingShips(counter, [xCoord, yCoord]);
                 if (placement === 'Invalid Location') {counter -= 1};
                 counter += 1;
@@ -98,12 +97,13 @@ export function initializeSquares(player) {
                 if(player === 'p1') {
                     if (gameboard.activeBoard[squareIndex].status !== 'untargeted') return;
                     p2.launchAttack(player1, [xCoord, yCoord]);
-                    renderSquareStatus(player);
                 } else if (player === 'p2') {
                     if (p2Gameboard.activeBoard[squareIndex].status !== 'untargeted') return;
                     p1.launchAttack(player2, [xCoord, yCoord]);
-                    renderSquareStatus(player);
-                }  
+                    game.finishTurn('p1');
+                }
+                renderSquareStatus('p1');
+                renderSquareStatus('p2');
             }
         })
     })
@@ -137,3 +137,18 @@ export function initializeHoverSquares(player) {
         })
     })
 }
+
+const reset = document.querySelector('.resetBtn');
+reset.addEventListener('click', () => {
+    counter = 0;
+    const p1Squares = document.querySelectorAll('.p1Square');
+    p1Squares.forEach((square) => {
+        square.classList.remove('squareHover');
+        square.textContent = '';
+    })
+    const p2Squares = document.querySelectorAll('.p2Square');
+    p2Squares.forEach((square) => {
+        square.textContent = '';
+    })
+    game.resetGame();
+})

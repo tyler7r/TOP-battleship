@@ -135,10 +135,8 @@ function Player(name) {
                     this.attackResult = 'hit';
                 } 
                 else {
-                    this.knownShip = false;
                     this.attackResult = 'miss';
                 }
-                return attack;
             } else if (opponent === player2) {
                 let attack = p2Gameboard.receiveAttack([x, y]);
                 if (attack.status === 'hit') {
@@ -147,17 +145,18 @@ function Player(name) {
                 } else if (attack.status === 'sunk') {
                     this.hitSquares.push(attack);
                     this.knownShip = false;
-                } 
-                else {
-                    this.knownShip = false;
                 }
             }
+            renderSquareStatus('p1');
+            renderSquareStatus('p2');
         },
 
         computerAttack() {
-            if (this.knownShip === true) {
-                return this.smartComputer();
-            } else if (this.knownShip === false) {
+            if (game.checkWinner() === 'Player 1 Wins' || game.checkWinner() === 'Player 2 Wins') return;
+            // if (this.knownShip === true) {
+            //     return this.smartComputer();
+            // } 
+            // else if (this.knownShip === false) {
                 this.untargetedSquares = [];
                 for (let i = 0; i < gameboard.activeBoard.length; i++) {
                     if (gameboard.activeBoard[i].status === 'untargeted') {
@@ -179,8 +178,10 @@ function Player(name) {
                 }
                 this.launchAttack(player1, [xCoord, yCoord]);
 
-                return [squareSelect, xCoord, yCoord, this.knownShip];
-            }
+                game.finishTurn('p2');
+
+                return ([squareSelect, xCoord, yCoord, this.knownShip]);
+            // }
         },
 
         smartComputer() {
@@ -204,40 +205,54 @@ function Player(name) {
                 squareAbove.x = xCoord;
                 squareAbove.y = yCoord + 1;
                 squareAbove.goodMove = true;
+                squareAbove.name = ((squareAbove.y * 10) + squareAbove.x - 10);
             }
             if (yCoord - 1 >= 1) {
                 // squareBelow.name = squareBelow;
                 squareBelow.x = xCoord;
                 squareBelow.y = yCoord - 1;
                 squareBelow.goodMove = true;
+                squareBelow.name = ((squareBelow.y * 10) + squareBelow.x - 10);
             }
             if (xCoord + 1 <= 10) {
                 // squareRight.name = squareRight;
                 squareRight.x = xCoord + 1;
                 squareRight.y = yCoord;
                 squareRight.goodMove = true;
+                squareRight.name = ((squareRight.y * 10) + squareRight.x - 10);
             }
             if (xCoord - 1 >= 1) {
                 // squareLeft.name = squareLeft;
                 squareLeft.x = xCoord - 1;
                 squareLeft.y = yCoord;
                 squareLeft.goodMove = true;
+                squareLeft.name = ((squareLeft.y * 10) + squareLeft.x - 10);
             }
             
             let brain = () => {
-                if (this.latestMove !== undefined) {
-                    this.latestMove.goodMove = false;
-                }
-                let possibleMoves = [squareAbove, squareBelow, squareLeft, squareRight];
+                let adjacentSquares = [squareAbove, squareBelow, squareLeft, squareRight];
                 let smartMoves = [];
-                for (let i = 0; i < possibleMoves.length; i++) {
-                    if (possibleMoves[i].goodMove === true) {
-                        smartMoves.push(possibleMoves[i]);
+                adjacentSquares.forEach((square) => {
+                    if (this.hitSquares.forEach((spot) => {
+                        spot.name !== square.name;
+                    })) {
+                        smartMoves.push(square);
+                    }
+                });
+                console.log(smartMoves);
+                if (this.attackResult === 'miss') {
+                    adjacentSquares[0].goodMove = false;
+                    adjacentSquares.shift();
+                }
+                console.log(adjacentSquares);
+                for (let i = 0; i < adjacentSquares.length; i++) {
+                    if (adjacentSquares[i].goodMove === true) {
+                        smartMoves.push(adjacentSquares[i]);
                     }
                 }
                 this.latestMove = smartMoves[0];
                 this.launchAttack(player1, [smartMoves[0].x, smartMoves[0].y]);
-                return smartMoves;
+                return console.log(smartMoves, this.latestMove);
             }
 
             return brain();
@@ -258,7 +273,7 @@ function Game (){
     return {
         startGame: true,
 
-        playerTurn: player1,
+        playerTurn: undefined,
 
         unusedSquares: [],
 
@@ -272,6 +287,7 @@ function Game (){
             gameboard.createShips();
             p2Gameboard.createShips();
             this.computerPlacingShip();
+            this.checkWinner();
         },
 
         placingShips(num, [x, y]) {
@@ -390,8 +406,54 @@ function Game (){
             })
         },
 
-        changePlayer() {
+        finishTurn(player) {
+            if (player === 'p1') {
+                this.playerTurn = player2;
+                setTimeout(() => {
+                    p2.computerAttack();
+                }, 100);
+            } else if (player === 'p2') {
+                this.playerTurn = player1;
+            }
+        },
 
+        checkWinner() {
+            let p1SunkValues = [];
+            let p2SunkValues = [];
+            const isTrue = (value) => value === true;
+            for (const ships in gameboard.shipMap) {
+                p1SunkValues.push(gameboard.shipMap[ships].sunk);
+            }
+            for (const ships in p2Gameboard.shipMap) {
+                p2SunkValues.push(p2Gameboard.shipMap[ships].sunk);
+            }
+            if (p1SunkValues.every(isTrue)) {
+                return ('Player 2 Wins');
+            }
+            if (p2SunkValues.every(isTrue)) {
+                return ('Player 1 Wins');
+            }
+            p1SunkValues = [];
+            p2SunkValues = [];
+        },
+
+        resetGame() {
+            gameboard.activeBoard = [];
+            p2Gameboard.activeBoard = [];
+            gameboard.shipMap = {};
+            p2Gameboard.shipMap = {};
+
+            p2.untargetedSquares = [];
+            p2.knownShip = false;
+            p2.attackResult = 'miss';
+            p2.hitSquares = [];
+            p2.latestMove = undefined;
+            this.startGame = true;
+            this.playerTurn = undefined;
+            this.unusedSquares = [];
+            renderSquareStatus('p1');
+            renderSquareStatus('p2');
+            this.initializeGame();
         }
     }
 }
