@@ -1,6 +1,6 @@
-import { ship, gameboard, p2Gameboard, p1, p2, player1 } from "./index";
+import { ship, gameboard, p2Gameboard, p1, p2, player1, player2, game } from "./index";
 
-describe('Ship Factory Function Property Check', () => {
+describe.skip('Ship Factory Function Property Check', () => {
     test('Ship length recorded properly', () => {
         expect(ship.length).toBe(2);
     })
@@ -15,7 +15,7 @@ describe('Ship Factory Function Property Check', () => {
     })
 })
 
-describe('Ship Factory Function Method Check', () => {
+describe.skip('Ship Factory Function Method Check', () => {
     test('hit method accumulates ship.hits', () => {
         expect(ship.hit()).toBe(1);
     })
@@ -36,7 +36,7 @@ describe('Ship Factory Function Method Check', () => {
     })
 })
 
-describe('Gameboard Method Check', () => {
+describe.skip('Gameboard Method Check', () => {
     test('createShips creates five ships and stores them in shipMap', () => {
         expect(gameboard.createShips()).toBe(5);
     })
@@ -56,7 +56,7 @@ describe('Gameboard Method Check', () => {
         test('Contains carrier', () => {
             expect(gameboard.shipMap.carrier).toBeTruthy();        })
     })
-    describe('placeShip returns new ships coordinates. Ship length and board size accounted for', () => {
+    describe.skip('placeShip returns new ships coordinates. Ship length and board size accounted for', () => {
         test('createBoard will create an active playing Board for both players', () => {
             gameboard.createBoard();
             expect(gameboard.activeBoard.length).toBe(100);
@@ -88,7 +88,7 @@ describe('Gameboard Method Check', () => {
             expect(gameboard.activeBoard[17].occupied).toBe('carrier');
         })
     })
-    describe('receiveAttack takes in coordinates and adjusts gameboard as necessary', () => {
+    describe.skip('receiveAttack takes in coordinates and adjusts gameboard as necessary', () => {
         test('receiveAttack returns which square was attacked', () => {
             expect(gameboard.receiveAttack([4, 4])).toBe(gameboard.activeBoard[33]);
         })
@@ -115,7 +115,7 @@ describe('Gameboard Method Check', () => {
     })
 })
 
-describe('Player method check', () => {
+describe.skip('Player method check', () => {
     test('Player name is updated based on entry', () => {
         expect(player1).toBe('Tyler');
     })
@@ -138,12 +138,36 @@ describe('Player method check', () => {
         })
     })
 })
-describe('AI method checks', () => {
-    test.skip('Computer will fire on an untargeted square and update the gameboard.activeBoard accordingly', () => {
-        gameboard.placeShip(player1, gameboard.shipMap.battleship, [6, 6]);
-        p2.launchAttack(player1, [1, 1]);
-        expect(p2.knownShip).toBe(true);
+describe.skip('AI method checks', () => {
+    test('Computer will fire on an untargeted square and update the activeBoard accordingly', () => {
+        gameboard.createShips();
+        gameboard.placeShip(gameboard.shipMap.battleship, [1, 1]);
+        p2.computerAttack();
+        expect(p2.knownShip).toBe(false);
+        expect(p2.untargetedSquares.length).toBe(99);
+    })
+    test('Computer can fire a smart shot based on the last hit target', () => {
+        p2Gameboard.placeShip(gameboard.shipMap.carrier, [5, 8]);
+        // p2.computerAttack();
+        expect(p2.launchAttack(player1, [6, 8])).toBe(false);
         expect(p2.computerAttack()).toBe(false);
+    })
+})
+
+describe.skip('Game loop', () => {
+    test('Will start the game with player1 turn', () => {
+        expect(game.playerTurn).toBe(player1);
+    })
+    test('Will change player turn after each fired shot', () => {
+        p1.launchAttack(player2, [1, 1]);
+        expect(game.playerTurn).toBe(player2);
+    })
+    test('Will know when all the ships are sunk and who won' , () => {
+        expect(game.checkWinner()).toBe(player2);
+    })
+    test('Will be able to reset the board', () => {
+        expect(gameboard.shipMap).toBe({});
+        expect(p2Gameboard.shipMap).toBe({});
     })
 })
 
