@@ -1,5 +1,7 @@
 import { gameboard, p2Gameboard, p1, p2, player1, player2, game } from ".";
 
+const script = document.querySelector('.script');
+
 export let xCoord;
 export let yCoord;
 export let counter = 0;
@@ -63,6 +65,7 @@ export function renderSquareStatus(player) {
             square.textContent = '';
         } else if (activeBoard[i].status === 'sunk') {
             square.textContent = 'X'
+            square.classList.add('sunkShip');
         }
     }
 }
@@ -91,15 +94,21 @@ export function initializeSquares(player) {
                 let placement = game.placingShips(counter, [xCoord, yCoord]);
                 if (placement === 'Invalid Location') {counter -= 1};
                 counter += 1;
+                game.script();
             } else {
                 if (e.target.className.includes('p1')) return;
                 let squareIndex = ((yCoord * 10) + xCoord) - 11;
-                if(player === 'p1') {
+                if (player === 'p1') {
                     if (gameboard.activeBoard[squareIndex].status !== 'untargeted') return;
                     p2.launchAttack(player1, [xCoord, yCoord]);
                 } else if (player === 'p2') {
                     if (p2Gameboard.activeBoard[squareIndex].status !== 'untargeted') return;
                     p1.launchAttack(player2, [xCoord, yCoord]);
+                    if (p2Gameboard.activeBoard[squareIndex].status === 'sunk') {
+                        script.textContent = `SUNK THEIR ${p2Gameboard.activeBoard[squareIndex].occupied.toUpperCase()}`;
+                    } else {
+                        script.textContent = `Last Shot: ${p2Gameboard.activeBoard[squareIndex].status.toUpperCase()}`;
+                    }
                     game.finishTurn('p1');
                 }
                 renderSquareStatus('p1');
@@ -144,11 +153,14 @@ reset.addEventListener('click', () => {
     const p1Squares = document.querySelectorAll('.p1Square');
     p1Squares.forEach((square) => {
         square.classList.remove('squareHover');
+        square.classList.remove('sunkShip');
         square.textContent = '';
     })
     const p2Squares = document.querySelectorAll('.p2Square');
     p2Squares.forEach((square) => {
         square.textContent = '';
+        square.classList.remove('sunkShip');
     })
     game.resetGame();
 })
+

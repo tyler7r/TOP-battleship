@@ -1,7 +1,10 @@
-import { createP1Board, createP2Board, initializeSquares, renderSquareStatus, xCoord, yCoord, initializeHoverSquares } from "./renderDOM";
+import { createP1Board, createP2Board, initializeSquares, renderSquareStatus, xCoord, yCoord, initializeHoverSquares, counter } from "./renderDOM";
 
 createP1Board();
 createP2Board();
+
+let nextMoves = [];
+const script = document.querySelector('.script');
 
 function Ship(length = 2, name = 'battleship') {
     return {
@@ -78,7 +81,6 @@ function Gameboard() {
                     let square = this.activeBoard[index];
                     square.occupied = ship.name;
                 }
-                console.log(ship.coordinates);
                 return ship.coordinates;
             }
         },
@@ -146,6 +148,7 @@ function Player(name) {
                     this.hitSquares.push(attack);
                     this.knownShip = false;
                 }
+                return attack.status;
             }
             renderSquareStatus('p1');
             renderSquareStatus('p2');
@@ -228,31 +231,23 @@ function Player(name) {
                 squareLeft.goodMove = true;
                 squareLeft.name = ((squareLeft.y * 10) + squareLeft.x - 10);
             }
-            
+
+            let adjacentSquares = [squareAbove, squareBelow, squareLeft, squareRight];
+
             let brain = () => {
-                let adjacentSquares = [squareAbove, squareBelow, squareLeft, squareRight];
-                let smartMoves = [];
-                adjacentSquares.forEach((square) => {
-                    if (this.hitSquares.forEach((spot) => {
-                        spot.name !== square.name;
-                    })) {
-                        smartMoves.push(square);
-                    }
-                });
-                console.log(smartMoves);
+                let squareCheck = this.untargetedSquares.forEach((square) => {
+                    return (square.name);
+                })
                 if (this.attackResult === 'miss') {
-                    adjacentSquares[0].goodMove = false;
-                    adjacentSquares.shift();
+                    nextMoves.shift();
+                    p2.launchAttack(player1, [nextMoves[0].x, nextMoves[0].y]);
+                } else {
+                    adjacentSquares.forEach((square) => {
+                        if (squareCheck === square.name) {
+                            nextMoves.push(square);
+                        }
+                    })
                 }
-                console.log(adjacentSquares);
-                for (let i = 0; i < adjacentSquares.length; i++) {
-                    if (adjacentSquares[i].goodMove === true) {
-                        smartMoves.push(adjacentSquares[i]);
-                    }
-                }
-                this.latestMove = smartMoves[0];
-                this.launchAttack(player1, [smartMoves[0].x, smartMoves[0].y]);
-                return console.log(smartMoves, this.latestMove);
             }
 
             return brain();
@@ -286,6 +281,7 @@ function Game (){
             initializeHoverSquares('p2');
             gameboard.createShips();
             p2Gameboard.createShips();
+            this.script();
             this.computerPlacingShip();
             this.checkWinner();
         },
@@ -428,13 +424,33 @@ function Game (){
                 p2SunkValues.push(p2Gameboard.shipMap[ships].sunk);
             }
             if (p1SunkValues.every(isTrue)) {
+                script.textContent = 'P2 Wins'
                 return ('Player 2 Wins');
             }
             if (p2SunkValues.every(isTrue)) {
+                script.textContent = 'P1 Wins'
                 return ('Player 1 Wins');
             }
             p1SunkValues = [];
             p2SunkValues = [];
+        },
+
+        script() {
+            if (this.startGame === true) {
+                if (counter === 0) {
+                    script.textContent = 'Place Your Destroyer(2)';
+                } else if (counter === 1) {
+                    script.textContent = 'Place Your Submarine(3)';
+                } else if (counter === 2) {
+                    script.textContent = 'Place Your Cruiser(3)';
+                } else if (counter === 3) {
+                    script.textContent = 'Place Your Battleship(4)';
+                } else if (counter === 4) {
+                    script.textContent = 'Place Your Carrier(5)';
+                }
+            } else if (this.startGame == false) {
+                script.textContent = "It's Your Turn! Fire at P2 Gameboard";
+            }
         },
 
         resetGame() {
